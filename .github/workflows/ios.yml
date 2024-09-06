@@ -19,7 +19,7 @@ jobs:
           # Obtener el dispositivo iPhone para pruebas
           device=$(xcrun xctrace list devices 2>&1 | grep -oE 'iPhone.*?[^\(]+' | head -1 | awk '{$1=$1;print}' | sed -e "s/ Simulator$//")
           if [ -z "$scheme" ] || [ "$scheme" = "default" ]; then
-            scheme="YourSchemeName"  # Reemplaza con el nombre de tu esquema
+            scheme="RestaurantManager" 
           fi
           if [ -n "`ls -A iosApp | grep -i \\.xcworkspace\$`" ]; then
             filetype_parameter="workspace"
@@ -31,6 +31,7 @@ jobs:
             echo "Error: No se encontró un archivo .xcworkspace o .xcodeproj en iosApp."
             exit 1
           fi
+
           file_to_build=$(echo $file_to_build | awk '{$1=$1;print}')
           xcodebuild build-for-testing -scheme "$scheme" -"$filetype_parameter" "iosApp/$file_to_build" -destination "platform=iOS Simulator,name=$device"
           
