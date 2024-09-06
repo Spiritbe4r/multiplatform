@@ -17,8 +17,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
             # Paso 2: Verificar los esquemas disponibles
-      - name: List available schemes
-        run: xcodebuild -list -project iosApp/iosApp.xcodeproj
+      # Paso 2: Dar permisos de ejecución a gradlew
+      - name: Set executable permission for gradlew
+        run: chmod +x ./gradlew
       - name: Set Default Scheme and Build
         run: |
           # Obtener el dispositivo iPhone para pruebas
