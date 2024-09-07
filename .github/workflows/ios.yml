@@ -56,6 +56,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Add a step to print the current working directory and list files to verify the checkout
+      - name: Show current directory and list files
+        run: |
+          pwd
+          ls -al
+
+      - name: Set Default Scheme
+        run: |
+          scheme_list=$(xcodebuild -list -json | tr -d "\n")
+          default=$(echo $scheme_list | ruby -e "require 'json'; puts JSON.parse(STDIN.gets)['project']['targets'][0]")
+          echo $default | cat >default
+          echo Using default scheme: $default
+        working-directory: iosApp/iosApp # Adjusted to the correct path
+
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
