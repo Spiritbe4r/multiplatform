@@ -37,6 +37,9 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
+      # Add this step to give executable permissions to gradlew
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
 
       - name: Build Android and JVM
         run: ./gradlew build
