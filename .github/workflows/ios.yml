@@ -1,4 +1,4 @@
-name: iOS starter workflow
+name: Kotlin Multiplatform CI
 
 on:
   push:
@@ -7,63 +7,91 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-    name: Build and Test default scheme using any available iPhone simulator
-    runs-on: macos-latest
-
-    
+  android_build:
+    name: Build and Test Android and JVM
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-            # Paso 2: Verificar los esquemas disponibles
-      # Paso 2: Dar permisos de ejecución a gradlew
-      - name: Set executable permission for gradlew
-        run: chmod +x ./gradlew
-      # Paso 3: Definir y seleccionar esquema y ruta de proyecto
-      - name: Set Default Scheme and Build
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 31
+          build-tools: '31.0.0'
+          ndk-version: '21.1.6352462'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Build Android and JVM
+        run: ./gradlew build
+
+      - name: Run Android and JVM tests
+        run: ./gradlew test
+
+  ios_build:
+    name: Build and Test iOS
+    runs-on: macos-latest
+    needs: android_build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Set Default Scheme
         run: |
-          # Obtener el dispositivo iPhone para pruebas
-          device=$(xcrun xctrace list devices 2>&1 | grep -oE 'iPhone.*?[^\(]+' | head -1 | awk '{$1=$1;print}' | sed -e "s/ Simulator$//")
+          scheme_list=$(xcodebuild -list -json | tr -d "\n")
+          default=$(echo $scheme_list | ruby -e "require 'json'; puts JSON.parse(STDIN.gets)['project']['targets'][0]")
+          echo $default | cat >default
+          echo Using default scheme: $default
 
-          # Usar el esquema "iosApp"
-          scheme="iosApp"
-
-          # Verificar si existe un archivo .xcworkspace o .xcodeproj en iosApp
-          if [ -n "`ls -A iosApp | grep -i \\.xcworkspace\$`" ]; then
-            filetype_parameter="workspace"
-            file_to_build=$(ls -A iosApp | grep -i \\.xcworkspace\$)
-          elif [ -n "`ls -A iosApp | grep -i \\.xcodeproj\$`" ]; then
-            filetype_parameter="project"
-            file_to_build=$(ls -A iosApp | grep -i \\.xcodeproj\$)
-          else
-            echo "Error: No se encontró un archivo .xcworkspace o .xcodeproj en iosApp."
-            exit 1
-          fi
-
-          # Limpiar posibles espacios en el nombre del archivo
-          file_to_build=$(echo $file_to_build | awk '{$1=$1;print}')
-
-          # Ejecutar la compilación con xcodebuild
-          xcodebuild build-for-testing -scheme "$scheme" -"$filetype_parameter" "iosApp/$file_to_build" -destination "platform=iOS Simulator,name=$device"
-          
-      - name: Build
+      - name: Build iOS
         env:
           scheme: ${{ 'default' }}
           platform: ${{ 'iOS Simulator' }}
         run: |
-          # xcrun xctrace returns via stderr, not the expected stdout (see https://developer.apple.com/forums/thread/663959)
           device=`xcrun xctrace list devices 2>&1 | grep -oE 'iPhone.*?[^\(]+' | head -1 | awk '{$1=$1;print}' | sed -e "s/ Simulator$//"`
           if [ $scheme = default ]; then scheme=$(cat default); fi
           if [ "`ls -A | grep -i \\.xcworkspace\$`" ]; then filetype_parameter="workspace" && file_to_build="`ls -A | grep -i \\.xcworkspace\$`"; else filetype_parameter="project" && file_to_build="`ls -A | grep -i \\.xcodeproj\$`"; fi
           file_to_build=`echo $file_to_build | awk '{$1=$1;print}'`
           xcodebuild build-for-testing -scheme "$scheme" -"$filetype_parameter" "$file_to_build" -destination "platform=$platform,name=$device"
-      - name: Test
+
+      - name: Test iOS
         env:
           scheme: ${{ 'default' }}
           platform: ${{ 'iOS Simulator' }}
         run: |
-          # xcrun xctrace returns via stderr, not the expected stdout (see https://developer.apple.com/forums/thread/663959)
           device=`xcrun xctrace list devices 2>&1 | grep -oE 'iPhone.*?[^\(]+' | head -1 | awk '{$1=$1;print}' | sed -e "s/ Simulator$//"`
           if [ $scheme = default ]; then scheme=$(cat default); fi
           if [ "`ls -A | grep -i \\.xcworkspace\$`" ]; then filetype_parameter="workspace" && file_to_build="`ls -A | grep -i \\.xcworkspace\$`"; else filetype_parameter="project" && file_to_build="`ls -A | grep -i \\.xcodeproj\$`"; fi
