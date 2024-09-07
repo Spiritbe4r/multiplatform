@@ -54,7 +54,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+      # Ensure the gradlew script has execute permissions
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
       # Print the current working directory and list files to verify the checkout
       - name: Show current directory and list files
         run: |
