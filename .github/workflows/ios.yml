@@ -68,7 +68,7 @@ jobs:
           default=$(echo $scheme_list | ruby -e "require 'json'; puts JSON.parse(STDIN.gets)['project']['targets'][0]")
           echo $default | cat >default
           echo Using default scheme: $default
-        working-directory: iosApp/iosApp # Adjusted to the correct path
+        working-directory: iosApp  # Adjusted to the correct path
 
       - name: Set up JDK
         uses: actions/setup-java@v3
